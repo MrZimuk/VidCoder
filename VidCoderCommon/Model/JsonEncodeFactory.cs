@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -1472,28 +1472,43 @@ public class JsonEncodeFactory
 
 		// When using padding fill/width/height, the dimensions we are specifying are post-rotation. We need to adjust here to give the right values to the scale filter.
 		int? maxPictureWidth = null, maxPictureHeight = null;
-		switch (profile.PaddingMode)
+		if (profile.SizingMode == VCSizingMode.ShortestSide)
 		{
-			case VCPaddingMode.Fill:
-			case VCPaddingMode.Width:
-			case VCPaddingMode.Height:
-				maxPictureWidth = profile.Width;
-				maxPictureHeight = profile.Height;
-				break;
-			case VCPaddingMode.Custom:
-			case VCPaddingMode.None:
-			default:
-				if (profile.Width > 0)
-				{
+			int shortestSideLimit = profile.Width > 0 ? profile.Width : DefaultMaxHeight;
+			if (adjustedSourceWidth <= adjustedSourceHeight)
+			{
+				maxPictureWidth = shortestSideLimit;
+			}
+			else
+			{
+				maxPictureHeight = shortestSideLimit;
+			}
+		}
+		else
+		{
+			switch (profile.PaddingMode)
+			{
+				case VCPaddingMode.Fill:
+				case VCPaddingMode.Width:
+				case VCPaddingMode.Height:
 					maxPictureWidth = profile.Width;
-				}
-
-				if (profile.Height > 0)
-				{
 					maxPictureHeight = profile.Height;
-				}
+					break;
+				case VCPaddingMode.Custom:
+				case VCPaddingMode.None:
+				default:
+					if (profile.Width > 0)
+					{
+						maxPictureWidth = profile.Width;
+					}
 
-				break;
+					if (profile.Height > 0)
+					{
+						maxPictureHeight = profile.Height;
+					}
+
+					break;
+			}
 		}
 
 		int scalingMultipleCap = profile.ScalingMode.UpscalingMultipleCap();
@@ -1517,7 +1532,15 @@ public class JsonEncodeFactory
 		}
 
 		double scaleFactor;
-		if (maxPictureHeight == null || adjustedSourceAspect > (double)maxPictureWidth.Value / maxPictureHeight.Value)
+		if (maxPictureHeight == null)
+		{
+			scaleFactor = (double)maxPictureWidth.Value / adjustedSourceWidth;
+		}
+		else if (maxPictureWidth == null)
+		{
+			scaleFactor = (double)maxPictureHeight.Value / adjustedSourceHeight;
+		}
+		else if (adjustedSourceAspect > (double)maxPictureWidth.Value / maxPictureHeight.Value)
 		{
 			scaleFactor = (double)maxPictureWidth.Value / adjustedSourceWidth;
 		}
@@ -1539,52 +1562,61 @@ public class JsonEncodeFactory
 
 		int outputWidth, outputHeight;
 		VCPadding padding;
-		switch (profile.PaddingMode)
+		if (profile.SizingMode == VCSizingMode.ShortestSide)
 		{
-			case VCPaddingMode.None:
-				outputWidth = pictureOutputWidth;
-				outputHeight = pictureOutputHeight;
+			outputWidth = pictureOutputWidth;
+			outputHeight = pictureOutputHeight;
+			padding = new VCPadding();
+		}
+		else
+		{
+			switch (profile.PaddingMode)
+			{
+				case VCPaddingMode.None:
+					outputWidth = pictureOutputWidth;
+					outputHeight = pictureOutputHeight;
 
-				padding = new VCPadding();
+					padding = new VCPadding();
 
-				break;
-			case VCPaddingMode.Custom:
-				outputWidth = pictureOutputWidth + profile.Padding.Left + profile.Padding.Right;
-				outputHeight = pictureOutputHeight + profile.Padding.Top + profile.Padding.Bottom;
+					break;
+				case VCPaddingMode.Custom:
+					outputWidth = pictureOutputWidth + profile.Padding.Left + profile.Padding.Right;
+					outputHeight = pictureOutputHeight + profile.Padding.Top + profile.Padding.Bottom;
 
-				padding = new VCPadding(profile.Padding);
+					padding = new VCPadding(profile.Padding);
 
-				break;
-			case VCPaddingMode.Fill:
-				outputWidth = profile.Width;
-				outputHeight = profile.Height;
+					break;
+				case VCPaddingMode.Fill:
+					outputWidth = profile.Width;
+					outputHeight = profile.Height;
 
-				int horizontalPaddingPerSide = (profile.Width - pictureOutputWidth) / 2;
-				int verticalPaddingPerSide = (profile.Height - pictureOutputHeight) / 2;
+					int horizontalPaddingPerSide = (profile.Width - pictureOutputWidth) / 2;
+					int verticalPaddingPerSide = (profile.Height - pictureOutputHeight) / 2;
 
-				padding = new VCPadding(verticalPaddingPerSide, verticalPaddingPerSide, horizontalPaddingPerSide, horizontalPaddingPerSide);
+					padding = new VCPadding(verticalPaddingPerSide, verticalPaddingPerSide, horizontalPaddingPerSide, horizontalPaddingPerSide);
 
-				break;
-			case VCPaddingMode.Width:
-				outputWidth = profile.Width;
-				outputHeight = pictureOutputHeight;
+					break;
+				case VCPaddingMode.Width:
+					outputWidth = profile.Width;
+					outputHeight = pictureOutputHeight;
 
-				horizontalPaddingPerSide = (profile.Width - pictureOutputWidth) / 2;
+					horizontalPaddingPerSide = (profile.Width - pictureOutputWidth) / 2;
 
-				padding = new VCPadding(0, 0, horizontalPaddingPerSide, horizontalPaddingPerSide);
+					padding = new VCPadding(0, 0, horizontalPaddingPerSide, horizontalPaddingPerSide);
 
-				break;
-			case VCPaddingMode.Height:
-				outputWidth = pictureOutputWidth;
-				outputHeight = profile.Height;
+					break;
+				case VCPaddingMode.Height:
+					outputWidth = pictureOutputWidth;
+					outputHeight = profile.Height;
 
-				verticalPaddingPerSide = (profile.Height - pictureOutputHeight) / 2;
+					verticalPaddingPerSide = (profile.Height - pictureOutputHeight) / 2;
 
-				padding = new VCPadding(verticalPaddingPerSide, verticalPaddingPerSide, 0, 0);
+					padding = new VCPadding(verticalPaddingPerSide, verticalPaddingPerSide, 0, 0);
 
-				break;
-			default:
-				throw new ArgumentOutOfRangeException();
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
 		}
 
 		int roundedOutputWidth = MathUtilities.RoundToModulus(outputWidth, modulus);

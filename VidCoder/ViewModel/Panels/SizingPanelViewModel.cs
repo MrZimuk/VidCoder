@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reactive;
@@ -48,6 +48,7 @@ public class SizingPanelViewModel : PanelViewModel
 		{
 			new(VCSizingMode.Automatic, CommonRes.Automatic),
 			new(VCSizingMode.Manual, EncodingRes.SizingModeManual),
+			new(VCSizingMode.ShortestSide, EncodingRes.SizingModeShortestSide),
 		};
 
 		this.ScalingModeChoices = new List<ComboChoice<VCScalingMode>>
@@ -76,6 +77,11 @@ public class SizingPanelViewModel : PanelViewModel
 			if (sizingMode == VCSizingMode.Manual)
 			{
 				return EncodingRes.WidthLabel;
+			}
+
+			if (sizingMode == VCSizingMode.ShortestSide)
+			{
+				return scalingMode == VCScalingMode.UpscaleFill ? EncodingRes.TargetSizeLabel : EncodingRes.MaxSizeLabel;
 			}
 
 			switch (paddingMode)
@@ -107,6 +113,11 @@ public class SizingPanelViewModel : PanelViewModel
 				return EncodingRes.HeightLabel;
 			}
 
+			if (sizingMode == VCSizingMode.ShortestSide)
+			{
+				return string.Empty;
+			}
+
 			switch (paddingMode)
 			{
 				case VCPaddingMode.Fill:
@@ -131,7 +142,7 @@ public class SizingPanelViewModel : PanelViewModel
 		// AllowEmptyResolution
 		this.WhenAnyValue(x => x.SizingMode, x => x.PaddingMode, x => x.ScalingMode, (sizingMode, paddingMode, scalingMode) =>
 		{
-			if (sizingMode == VCSizingMode.Manual)
+			if (sizingMode == VCSizingMode.Manual || sizingMode == VCSizingMode.ShortestSide)
 			{
 				return false;
 			}
@@ -307,6 +318,11 @@ public class SizingPanelViewModel : PanelViewModel
 				return true;
 			}
 
+			if (sizingMode == VCSizingMode.ShortestSide)
+			{
+				return false;
+			}
+
 			return paddingMode == VCPaddingMode.Custom;
 		}).ToProperty(this, x => x.PaddingUIEnabled, out this.paddingUIEnabled);
 
@@ -372,7 +388,7 @@ public class SizingPanelViewModel : PanelViewModel
 			{
 				bool oldAutoValue = this.AutomaticChange;
 
-				if (x.sizingMode == VCSizingMode.Automatic && x.paddingMode == VCPaddingMode.None)
+				if ((x.sizingMode == VCSizingMode.Automatic && x.paddingMode == VCPaddingMode.None) || x.sizingMode == VCSizingMode.ShortestSide)
 				{
 					this.AutomaticChange = true;
 					this.PadTop = 0;
@@ -499,6 +515,13 @@ public class SizingPanelViewModel : PanelViewModel
 
 				this.PixelAspectX = 1;
 				this.PixelAspectY = 1;
+			}
+			else if (this.SizingMode == VCSizingMode.ShortestSide)
+			{
+				if (this.Width == 0)
+				{
+					this.Width = JsonEncodeFactory.DefaultMaxHeight;
+				}
 			}
 
 			this.RefreshOutputSize();
@@ -768,10 +791,20 @@ public class SizingPanelViewModel : PanelViewModel
 
 	private void EnsureResolutionPopulatedIfRequired()
 	{
-		if (!this.AllowEmptyResolution && (this.Width == 0 || this.Height == 0))
+		if (!this.AllowEmptyResolution)
 		{
-			this.Width = JsonEncodeFactory.DefaultMaxWidth;
-			this.Height = JsonEncodeFactory.DefaultMaxHeight;
+			if (this.SizingMode == VCSizingMode.ShortestSide)
+			{
+				if (this.Width == 0)
+				{
+					this.Width = JsonEncodeFactory.DefaultMaxHeight;
+				}
+			}
+			else if (this.Width == 0 || this.Height == 0)
+			{
+				this.Width = JsonEncodeFactory.DefaultMaxWidth;
+				this.Height = JsonEncodeFactory.DefaultMaxHeight;
+			}
 		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
 	x:Class="VidCoder.View.SizingPanel"
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -225,24 +225,28 @@
 						NoneCaption="{x:Static res:EncodingRes.NoneCaption}"
 						Number="{Binding Width, Mode=TwoWay}" />
 
-					<TextBlock
-						Margin="10 0 0 0"
-						VerticalAlignment="Center"
-						Text="{Binding HeightLabel}" />
+					<StackPanel
+						Orientation="Horizontal"
+						Visibility="{Binding SizingMode, Converter={StaticResource EnumVisibilityInverseConverter}, ConverterParameter={x:Static commonModel:VCSizingMode.ShortestSide}}">
+						<TextBlock
+							Margin="10 0 0 0"
+							VerticalAlignment="Center"
+							Text="{Binding HeightLabel}" />
 
-					<controls:NumberBox
-						Width="60"
-						Height="23"
-						Margin="6 0 0 0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Center"
-						AllowEmpty="{Binding AllowEmptyResolution}"
-						AutomationProperties.Name="{Binding HeightLabel}"
-						Maximum="20000"
-						Minimum="46"
-						Modulus="2"
-						NoneCaption="{x:Static res:EncodingRes.NoneCaption}"
-						Number="{Binding Height, Mode=TwoWay}" />
+						<controls:NumberBox
+							Width="60"
+							Height="23"
+							Margin="6 0 0 0"
+							HorizontalAlignment="Left"
+							VerticalAlignment="Center"
+							AllowEmpty="{Binding AllowEmptyResolution}"
+							AutomationProperties.Name="{Binding HeightLabel}"
+							Maximum="20000"
+							Minimum="46"
+							Modulus="2"
+							NoneCaption="{x:Static res:EncodingRes.NoneCaption}"
+							Number="{Binding Height, Mode=TwoWay}" />
+					</StackPanel>
 
 				</StackPanel>
 
@@ -288,12 +292,12 @@
 					Content="{x:Static res:EncodingRes.AnamorphicCheckbox}"
 					IsChecked="{Binding UseAnamorphic}"
 					ToolTip="{x:Static res:EncodingRes.AnamorphicToolTip}"
-					Visibility="{Binding SizingMode, Converter={StaticResource EnumVisibilityConverter}, ConverterParameter={x:Static commonModel:VCSizingMode.Automatic}}" />
+					Visibility="{Binding SizingMode, Converter={StaticResource EnumVisibilityInverseConverter}, ConverterParameter={x:Static commonModel:VCSizingMode.Manual}}" />
 
 				<StackPanel
 					Margin="0 6 0 0"
 					Orientation="Horizontal"
-					Visibility="{Binding SizingMode, Converter={StaticResource EnumVisibilityConverter}, ConverterParameter={x:Static commonModel:VCSizingMode.Automatic}}">
+					Visibility="{Binding SizingMode, Converter={StaticResource EnumVisibilityInverseConverter}, ConverterParameter={x:Static commonModel:VCSizingMode.Manual}}">
 					<TextBlock
 						Name="scalingModeLabel"
 						VerticalAlignment="Center"

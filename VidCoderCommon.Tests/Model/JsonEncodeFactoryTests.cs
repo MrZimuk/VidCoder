@@ -594,6 +594,150 @@ public class JsonEncodeFactoryTests
 
 	#endregion
 
+	#region Shortest side sizing mode
+	[TestMethod]
+	public void GetOutputSize_ShortestSide_Landscape_Downscales()
+	{
+		// Arrange
+		var profile = new VCProfile
+		{
+			SizingMode = VCSizingMode.ShortestSide,
+			ScalingMode = VCScalingMode.DownscaleOnly,
+			Width = 720,
+			CroppingType = VCCroppingType.None,
+		};
+
+		var sourceTitle = new SourceTitle
+		{
+			Geometry = new Geometry { Width = 1920, Height = 1080, PAR = new PAR { Num = 1, Den = 1 } },
+			Crop = new List<int> { 0, 0, 0, 0 },
+			LooseCrop = new List<int> { 0, 0, 0, 0 }
+		};
+
+		// Act
+		OutputSizeInfo outputSize = JsonEncodeFactory.GetOutputSize(profile, sourceTitle);
+
+		// Assert - shortest side is height (1080), scaled to 720. Width scaled to 1280.
+		AssertResolution(outputSize, 1280, 720);
+		AssertNormalPar(outputSize);
+		AssertZeroPadding(outputSize);
+	}
+
+	[TestMethod]
+	public void GetOutputSize_ShortestSide_Portrait_Downscales()
+	{
+		// Arrange
+		var profile = new VCProfile
+		{
+			SizingMode = VCSizingMode.ShortestSide,
+			ScalingMode = VCScalingMode.DownscaleOnly,
+			Width = 720,
+			CroppingType = VCCroppingType.None,
+		};
+
+		var sourceTitle = new SourceTitle
+		{
+			Geometry = new Geometry { Width = 1080, Height = 1920, PAR = new PAR { Num = 1, Den = 1 } },
+			Crop = new List<int> { 0, 0, 0, 0 },
+			LooseCrop = new List<int> { 0, 0, 0, 0 }
+		};
+
+		// Act
+		OutputSizeInfo outputSize = JsonEncodeFactory.GetOutputSize(profile, sourceTitle);
+
+		// Assert - shortest side is width (1080), scaled to 720. Height scaled to 1280.
+		AssertResolution(outputSize, 720, 1280);
+		AssertNormalPar(outputSize);
+		AssertZeroPadding(outputSize);
+	}
+
+	[TestMethod]
+	public void GetOutputSize_ShortestSide_DoesNotUpscale_WhenDownscaleOnly()
+	{
+		// Arrange
+		var profile = new VCProfile
+		{
+			SizingMode = VCSizingMode.ShortestSide,
+			ScalingMode = VCScalingMode.DownscaleOnly,
+			Width = 1440,
+			CroppingType = VCCroppingType.None,
+		};
+
+		var sourceTitle = new SourceTitle
+		{
+			Geometry = new Geometry { Width = 1920, Height = 1080, PAR = new PAR { Num = 1, Den = 1 } },
+			Crop = new List<int> { 0, 0, 0, 0 },
+			LooseCrop = new List<int> { 0, 0, 0, 0 }
+		};
+
+		// Act
+		OutputSizeInfo outputSize = JsonEncodeFactory.GetOutputSize(profile, sourceTitle);
+
+		// Assert - shortest side is 1080 < 1440, so remains unchanged under DownscaleOnly
+		AssertResolution(outputSize, 1920, 1080);
+		AssertNormalPar(outputSize);
+		AssertZeroPadding(outputSize);
+	}
+
+	[TestMethod]
+	public void GetOutputSize_ShortestSide_Upscales_WhenUpscaleFill()
+	{
+		// Arrange
+		var profile = new VCProfile
+		{
+			SizingMode = VCSizingMode.ShortestSide,
+			ScalingMode = VCScalingMode.UpscaleFill,
+			Width = 1440,
+			CroppingType = VCCroppingType.None,
+		};
+
+		var sourceTitle = new SourceTitle
+		{
+			Geometry = new Geometry { Width = 1920, Height = 1080, PAR = new PAR { Num = 1, Den = 1 } },
+			Crop = new List<int> { 0, 0, 0, 0 },
+			LooseCrop = new List<int> { 0, 0, 0, 0 }
+		};
+
+		// Act
+		OutputSizeInfo outputSize = JsonEncodeFactory.GetOutputSize(profile, sourceTitle);
+
+		// Assert - shortest side is 1080, upscaled to 1440. Width upscaled to 2560.
+		AssertResolution(outputSize, 2560, 1440);
+		AssertNormalPar(outputSize);
+		AssertZeroPadding(outputSize);
+	}
+
+	[TestMethod]
+	public void GetOutputSize_ShortestSide_WithRotation()
+	{
+		// Arrange
+		var profile = new VCProfile
+		{
+			SizingMode = VCSizingMode.ShortestSide,
+			ScalingMode = VCScalingMode.DownscaleOnly,
+			Width = 720,
+			CroppingType = VCCroppingType.None,
+			Rotation = VCPictureRotation.Clockwise90,
+		};
+
+		var sourceTitle = new SourceTitle
+		{
+			Geometry = new Geometry { Width = 1920, Height = 1080, PAR = new PAR { Num = 1, Den = 1 } },
+			Crop = new List<int> { 0, 0, 0, 0 },
+			LooseCrop = new List<int> { 0, 0, 0, 0 }
+		};
+
+		// Act
+		OutputSizeInfo outputSize = JsonEncodeFactory.GetOutputSize(profile, sourceTitle);
+
+		// Assert - rotated 90 deg -> post-rotation geometry is 1080x1920. Shortest side is width (1080), scaled to 720.
+		AssertResolution(outputSize, 720, 1280);
+		AssertNormalPar(outputSize);
+		AssertZeroPadding(outputSize);
+	}
+	#endregion
+
+
 	/// <summary>
 	/// Gets a DVD anamorphic source with cropping needed.
 	/// </summary>
